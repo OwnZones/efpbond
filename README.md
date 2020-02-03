@@ -21,7 +21,7 @@ The bonding plug-in makes it possible to either use multiple interfaces to creat
 
 You can for example send data over a mix of any UDP/SRT/TSP as illustrated above. For example 100% over a wan connection then as backup 50% over two 4G connections (100% total) as backup.
 
-Please read -> [**EFPBond**](https://edgeware-my.sharepoint.com/:p:/g/personal/anders_cedronius_edgeware_tv/ERnSit7j6udBsZOqkQcMLrQBpKmnfdApG3lehRk4zE-qgQ?e=qXzjfX) for more information.
+Please read -> [**EFPBond**](https://edgeware-my.sharepoint.com/:p:/g/personal/anders_cedronius_edgeware_tv/Efpyixw-TG5KuUupbCKUgfgBM3zNs-_dhM5RbUBjgdrKpw?e=NcBUBW) for more information.
 
 
 ## Installation
