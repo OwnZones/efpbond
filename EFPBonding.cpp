@@ -8,7 +8,7 @@
 //Constructor
 EFPBonding::EFPBonding() {
   LOGGER(true, LOGG_NOTIFY, "EFPBonding constructed")
-  globalPacketCounter = 0;
+  mGlobalPacketCounter = 0;
 }
 
 //Destructor
@@ -16,7 +16,7 @@ EFPBonding::~EFPBonding() {
   LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
 }
 
-EFPBonding::EFPBondingID EFPBonding::addInterface(std::function<void(const std::vector<uint8_t> &)> interface,
+EFPBonding::EFPBondingID EFPBonding::addInterface(std::function<void(const std::vector<uint8_t> &)> rInterface,
                                                   uint64_t commit,
                                                   uint64_t offset,
                                                   bool master) {
@@ -25,99 +25,97 @@ EFPBonding::EFPBondingID EFPBonding::addInterface(std::function<void(const std::
   }
 
   if (master) {
-    gotMasterInterface = true;
+    mGotMasterInterface = true;
   }
-  std::unique_ptr<EFPInterfaceProps> thisInterface = std::make_unique<EFPInterfaceProps>();
-  thisInterface->interfaceLocation = interface;
-  thisInterface->commit = commit;
-  thisInterface->fireCounter = (double)offset / 100.0;
-  thisInterface->interfaceID = uniqueInterfaceID;
-  thisInterface->masterInterface = master;
-  thisInterface->packetCounter = 0;
-  thisInterface->forwardMissingFragment = 0;
-  interfaceList.push_back(std::move(thisInterface));
-  currentCoverage = getCoverage();
-  return uniqueInterfaceID++;
+  std::unique_ptr<EFPInterfaceProps> lThisInterface = std::make_unique<EFPInterfaceProps>();
+  lThisInterface->mInterfaceLocation = rInterface;
+  lThisInterface->mCommit = commit;
+  lThisInterface->mFireCounter = (double)offset / 100.0;
+  lThisInterface->mInterfaceID = mUniqueInterfaceID;
+  lThisInterface->mMasterInterface = master;
+  lThisInterface->mPacketCounter = 0;
+  lThisInterface->mForwardMissingFragment = 0;
+  mInterfaceList.push_back(std::move(lThisInterface));
+  mCurrentCoverage = getCoverage();
+  return mUniqueInterfaceID++;
 }
 
 EFPBondingMessages EFPBonding::removeInterface(EFPBonding::EFPBondingID interfaceID) {
-  int interfaceIndex = 0;
-  for (auto const &interface: interfaceList) {
-    if (interface->interfaceID == interfaceID) {
-      if (interface->masterInterface) {
-        gotMasterInterface = false;
+  int lInterfaceIndex = 0;
+  for (auto const &interface: mInterfaceList) {
+    if (interface->mInterfaceID == interfaceID) {
+      if (interface->mMasterInterface) {
+        mGotMasterInterface = false;
       }
       try {
-        interfaceList.erase(interfaceList.begin() + interfaceIndex);
-        currentCoverage = getCoverage();
+        mInterfaceList.erase(mInterfaceList.begin() + lInterfaceIndex);
+        mCurrentCoverage = getCoverage();
         return EFPBondingMessages::noError;
       } catch (const std::out_of_range &oor) {
         LOGGER(true, LOGG_NOTIFY, "removeInterface out of range: " << oor.what())
         return EFPBondingMessages::removeInterfaceOutOfRange;
       }
     }
-    interfaceIndex++;
+    lInterfaceIndex++;
   }
   return EFPBondingMessages::removeInterfaceNotFound;
 }
 
 uint64_t EFPBonding::getCoverage() {
-  uint64_t totalPercent = 0;
-  for (auto const &interface: interfaceList) {
-    totalPercent += interface->commit;
+  uint64_t lTotalPercent = 0;
+  for (auto const &interface: mInterfaceList) {
+    lTotalPercent += interface->mCommit;
   }
-  return totalPercent;
+  return lTotalPercent;
 }
 
-
-
 EFPBondingMessages EFPBonding::distributeData(const std::vector<uint8_t> &rSubPacket) {
-  if (currentCoverage < 100) return EFPBondingMessages::coverageNot100Percent;
-  if (!gotMasterInterface) return EFPBondingMessages::masterInterfaceMissing;
-  std::function<void(const std::vector<uint8_t> &)> masterInterfaceLocation = nullptr;
+  if (mCurrentCoverage < 100) return EFPBondingMessages::coverageNot100Percent;
+  if (!mGotMasterInterface) return EFPBondingMessages::masterInterfaceMissing;
+  std::function<void(const std::vector<uint8_t> &)> lMasterInterfaceLocation = nullptr;
   std::atomic_uint64_t *pForwardMissingFragment = nullptr;
-  bool didForwardFragment = false;
-  globalPacketCounter++;
-  for (auto const &interface: interfaceList) {
-    if (interface->masterInterface) {
-      masterInterfaceLocation = interface->interfaceLocation;
-      pForwardMissingFragment = &interface->forwardMissingFragment;
+  bool lDidForwardFragment = false;
+  mGlobalPacketCounter++;
+  for (auto const &rInterface: mInterfaceList) {
+    if (rInterface->mMasterInterface) {
+      lMasterInterfaceLocation = rInterface->mInterfaceLocation;
+      pForwardMissingFragment = &rInterface->mForwardMissingFragment;
     }
-    interface->fireCounter += (double)interface->commit / 100.0;
-    if (interface->fireCounter >= 1.0) {
-      didForwardFragment = true;
-      interface->interfaceLocation(rSubPacket);
-      interface->fireCounter -= 1.0;
-      interface->packetCounter++;
-      //debug
-      if (interface->fireCounter >= 1.0) {
-        LOGGER(true, LOGG_NOTIFY, "Crazy... Back to school mr. programmer this is wrong.")
-      }
+    rInterface->mFireCounter += (double)rInterface->mCommit / 100.0;
+    if (rInterface->mFireCounter >= 1.0) {
+      lDidForwardFragment = true;
+      rInterface->mInterfaceLocation(rSubPacket);
+      rInterface->mFireCounter -= 1.0;
+      rInterface->mPacketCounter++;
     }
   }
 
-  if (!didForwardFragment) {
+  if (!lDidForwardFragment) {
     LOGGER(true, LOGG_WARN, "EFPBonding is not configured for optimal performance.")
-    if(masterInterfaceLocation == nullptr) {
+    if(lMasterInterfaceLocation == nullptr) {
       LOGGER(true, LOGG_FATAL, "Master interface not specified")
       return EFPBondingMessages::masterInterfaceLocationMissing;
     }
-    *pForwardMissingFragment++;
-    masterInterfaceLocation(rSubPacket);
+    pForwardMissingFragment[0]++;
+    lMasterInterfaceLocation(rSubPacket);
   }
-
   return EFPBondingMessages::noError;
 }
 
 EFPBonding::EFPStatistics EFPBonding::getStatistics(EFPBonding::EFPBondingID interfaceID) {
-  EFPBonding::EFPStatistics myStatistics;
-  for (auto const &interface: interfaceList) {
-    if (interface->interfaceID == interfaceID) {
-      myStatistics.noFragmentsSent = interface->packetCounter;
-      myStatistics.noGapsCoveredFor = interface->forwardMissingFragment;
-      myStatistics.percentOfTotalTraffic = ((double)interface->packetCounter / (double)globalPacketCounter) * 100.0;
-      return myStatistics;
+  EFPBonding::EFPStatistics lMyStatistics;
+  for (auto const &rInterface: mInterfaceList) {
+    if (rInterface->mInterfaceID == interfaceID) {
+      lMyStatistics.mNoFragmentsSent = rInterface->mPacketCounter;
+      lMyStatistics.mNoGapsCoveredFor = rInterface->mForwardMissingFragment;
+      lMyStatistics.mPercentOfTotalTraffic = ((double)rInterface->mPacketCounter / (double)mGlobalPacketCounter) * 100.0;
+      return lMyStatistics;
     }
   }
-  return myStatistics;
+  return lMyStatistics;
 }
+
+uint64_t EFPBonding::getGlobalPacketCounter() {
+  return mGlobalPacketCounter;
+}
+

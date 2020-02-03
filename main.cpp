@@ -24,7 +24,7 @@ void sendData(const std::vector<uint8_t> &rSubPacket) {
 
 void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
   if (rPacket->mBroken) {
-    std::cout << "Crap" << std::endl;
+    std::cout << "Frame is broken" << std::endl;
     return;
   }
 
@@ -33,10 +33,12 @@ void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
     for (int x=0;x<NO_INTERFACES;x++) {
       EFPBonding::EFPStatistics thisInterfaceStatistics = myEFPBonding.getStatistics(interfacesID[x]);
       std::cout << "If: " << unsigned(x) <<
-      " fragments: " << unsigned(thisInterfaceStatistics.noFragmentsSent) <<
-      " part: " << thisInterfaceStatistics.percentOfTotalTraffic << "%" <<
-      " cover fragments: " << unsigned(thisInterfaceStatistics.noGapsCoveredFor) << std::endl;
+      " fragments: " << unsigned(thisInterfaceStatistics.mNoFragmentsSent) <<
+      " part: " << thisInterfaceStatistics.mPercentOfTotalTraffic << "%" <<
+      " cover fragments: " << unsigned(thisInterfaceStatistics.mNoGapsCoveredFor) <<
+      std::endl;
     }
+    std::cout << "TotalFragments sent: " << myEFPBonding.getGlobalPacketCounter() << std::endl;
   }
 }
 
@@ -95,33 +97,34 @@ int main() {
   interfacesID[1] = myEFPBonding.addInterface(std::bind(&networkInterface2,std::placeholders::_1), 50, 50, NORMAL_INTERFACE);
   interfacesID[2] = myEFPBonding.addInterface(std::bind(&networkInterface3,std::placeholders::_1), 100, 0, NORMAL_INTERFACE);
 
-  if (myEFPBonding.currentCoverage != 200) {
+  if (myEFPBonding.mCurrentCoverage != 200) {
     std::cout << "Test3 failed" << std::endl;
     return EXIT_FAILURE;
   }
 
-  std::cout << "Added 3 interfaces (Test1). My coverage is: " << myEFPBonding.currentCoverage << "%" << std::endl;
+  std::cout << "Added 3 interfaces (Test1). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
 
   myEFPBonding.removeInterface(interfacesID[1]);
 
-  if (myEFPBonding.currentCoverage != 150) {
+  if (myEFPBonding.mCurrentCoverage != 150) {
     std::cout << "Test4 failed" << std::endl;
     return EXIT_FAILURE;
   }
 
-  std::cout << "Removed interface 2 (Test2). My coverage is: " << myEFPBonding.currentCoverage << "%" << std::endl;
+  std::cout << "Removed interface 2 (Test2). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
 
-  interfacesID[1] = myEFPBonding.addInterface(std::bind(&networkInterface2,std::placeholders::_1), 50, 0, NORMAL_INTERFACE);
+  interfacesID[1] = myEFPBonding.addInterface(std::bind(&networkInterface2,std::placeholders::_1), 50, 50, NORMAL_INTERFACE);
 
-  if (myEFPBonding.currentCoverage != 200) {
+  if (myEFPBonding.mCurrentCoverage != 200) {
     std::cout << "Test5 failed" << std::endl;
     return EXIT_FAILURE;
   }
 
-  std::cout << "Added interface 2 again (Test3). My coverage is: " << myEFPBonding.currentCoverage << "%" << std::endl;
-
-  myEFPBonding.removeInterface(interfacesID[2]);
-  std::cout << "Final coverage: " << myEFPBonding.currentCoverage << "%" << std::endl;
+  //If you remove the comments below and change interface interfacesID[1] to offset 0
+  //you will get 100% payload but 50% coverage. cover fragments statistics for the master inteface will start counting
+  //std::cout << "Added interface 2 again (Test3). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
+  //myEFPBonding.removeInterface(interfacesID[2]);
+  //std::cout << "Final coverage: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
 
   std::vector<uint8_t> mydata;
   for (int packetNumber=0;packetNumber < 1000; packetNumber++) {
