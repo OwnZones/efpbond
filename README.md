@@ -17,9 +17,11 @@ The EFPBond is acting as a data distributor from ElasticFrameProtocol and the un
 
 ```
 
-The bonding plug-in makes it possible to either use multiple interfaces to create a highet total trougput or for protecting the data sending the same data over multiple interfaces.
+The bonding plug-in makes it possible to use multiple interfaces to create a highet total trougput (bonding) and for protecting the data sending the same data over multiple interfaces (1+n).
 
-You can for example send data over a mix of any UDP/SRT/TSP as illustrated above. For example 100% over a wan connection then as backup 50% over two 4G connections (100% total) as backup.
+You can for example send data over a mix of any UDP/SRT/TCP as illustrated above.
+
+Example 100% over a WIFI connection, then as backup 50% each over two 4G connections as backup. That would create a 1+1 protected signal bonding two 4G connections as backup to the primary WIFI connection.
 
 Please read -> [**EFPBond**](https://edgeware-my.sharepoint.com/:p:/g/personal/anders_cedronius_edgeware_tv/Efpyixw-TG5KuUupbCKUgfgBM3zNs-_dhM5RbUBjgdrKpw?e=NcBUBW) for more information.
 
