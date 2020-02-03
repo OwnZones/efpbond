@@ -26,7 +26,7 @@ Please read -> [**EFPBond**](https://edgeware-my.sharepoint.com/:p:/g/personal/a
 
 ## Installation
 
-Requires cmake version >= **3.10** and **C++11**
+Requires cmake version >= **3.10** and **C++14**
 
 **Release:**
 
@@ -48,7 +48,7 @@ Output:
 
 *efpbondtest* (executable) runs trough the unit tests and returns EXIT_SUCESS if all unit tests pass.
 
-See the source code for examples on how to use.
+See the source code for examples on how to use EFPBond.
 
 
 ## Usage
