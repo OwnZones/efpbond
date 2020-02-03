@@ -92,9 +92,7 @@ int main() {
   }
 
   interfacesID[0] = myEFPBonding.addInterface(std::bind(&networkInterface1,std::placeholders::_1), 50, 0, MASTER_INTERFACE);
-
   interfacesID[1] = myEFPBonding.addInterface(std::bind(&networkInterface2,std::placeholders::_1), 50, 50, NORMAL_INTERFACE);
-
   interfacesID[2] = myEFPBonding.addInterface(std::bind(&networkInterface3,std::placeholders::_1), 100, 0, NORMAL_INTERFACE);
 
   if (myEFPBonding.currentCoverage != 200) {
