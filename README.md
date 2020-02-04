@@ -2,7 +2,7 @@
 
 # EFPBond
 
-The EFPBond is acting as a data distributor from ElasticFrameProtocol and the underlying protocols.
+The EFPBond is acting as a data distributor from [ElasticFrameProtocol](https://bitbucket.org/unitxtra/efp/src/master/) and the underlying protocols.
 
 ```
 ---------------------------------------------------------   /\
@@ -33,14 +33,14 @@ Requires cmake version >= **3.10** and **C++14**
 **Release:**
 
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Release
+cmake -DCMAKE_BUILD_TYPE=Release .
 make
 ```
 
 ***Debug:***
 
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Debug
+cmake -DCMAKE_BUILD_TYPE=Debug .
 make
 ```
 

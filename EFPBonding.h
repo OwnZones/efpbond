@@ -15,6 +15,7 @@
 #define EFPBOND__EFPBONDING_H
 
 #include <vector>
+#include <iostream>
 
 #define EFP_BONDING_MAJOR_VERSION 1
 #define EFP_BONDING_MINOR_VERSION 0

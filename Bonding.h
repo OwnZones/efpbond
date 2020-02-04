@@ -2,6 +2,8 @@
 // Created by Anders Cedronius on 2020-01-31.
 //
 
+#include <sstream>
+
 #ifndef EFPBOND__BONDING_H
 #define EFPBOND__BONDING_H
 
