@@ -23,11 +23,14 @@
 #define MASTER_INTERFACE true
 #define NORMAL_INTERFACE false
 
+
 enum class EFPBondingMessages : int16_t {
-  removeInterfaceNotFound = -10000, //Interface ID not found when EFPBonding looks for it
-  removeInterfaceOutOfRange, //For some reason the interface was causing a oob mesage
+  interfaceIDNotFound = -10000, //Interface ID not found
+  removeGroupNotFound, //Group ID not found
   masterInterfaceMissing, //Master interface not configured. Please do that
   masterInterfaceLocationMissing, //Cant find where to call the master interface
+  noGroupsFound, //The list of groups is empty
+  errorWhenChangingCommit, // the parameters given when changing the commit for the interfaces are out of spec.
   noError = 0,
   coverageNot100Percent //Warning payload under 100%
 };
@@ -35,8 +38,11 @@ enum class EFPBondingMessages : int16_t {
 class EFPBonding {
 public:
 
-  ///@EFPBondingID unique id of the interface used by the EFPBonding class
-  typedef uint64_t EFPBondingID;
+  ///@EFPBondingInterfaceID unique id of the single interface used by the EFPBonding class
+  typedef uint64_t EFPBondingInterfaceID;
+
+  ///@EFPBondingGroupID unique id of the group interface used by the EFPBonding class
+  typedef uint64_t EFPBondingGroupID;
 
   ///EFPStatistics
   ///@noGapsCoveredFor number of fragments this interface has covered for
@@ -47,6 +53,18 @@ public:
     uint64_t mNoGapsCoveredFor = 0;
     uint64_t mNoFragmentsSent = 0;
     double mPercentOfTotalTraffic = 0;
+  };
+
+  class EFPInterface {
+  public:
+    EFPBondingInterfaceID mInterfaceID = 0;
+    EFPBondingGroupID mGroupID = 0;
+    uint64_t mFireCounter = 0;
+    uint64_t mPacketCounter = 0;
+    uint64_t mForwardMissingFragment = 0;
+    std::function<void(const std::vector<uint8_t> &)> mInterfaceLocation = nullptr;
+    bool mMasterInterface = NORMAL_INTERFACE;
+    uint64_t mCommit = 0;
   };
 
   ///Constructor
@@ -65,48 +83,70 @@ public:
   uint16_t getVersion() { return (EFP_BONDING_MAJOR_VERSION << 8) | EFP_BONDING_MINOR_VERSION; }
 
   ///Adds a interface to EFPBonding
-  ///@interface pointer to the function that handles the data from EFP
-  ///@commit % (integer 1% to 100%) that should be sent over this interface
-  ///@offset % offset from 0% to 99% see the graphs in the documentation for the illustration of what tis parameter does
-  ///@master true == is master interface else is not.
-  EFPBondingID addInterface(std::function<void(const std::vector<uint8_t> &)> rInterface, uint64_t commit, uint64_t offset, bool master);
+  ///@rInterface A EFPInterface to be added
+  EFPBondingInterfaceID addInterface(EFPInterface &rInterface);
 
   ///Removes a interface from EFPBonding
   ///@interfaceID the ID of the interface to remove
-  EFPBondingMessages removeInterface(EFPBondingID interfaceID);
+  EFPBondingMessages removeInterface(EFPBondingInterfaceID interfaceID);
 
   ///Distributes the data to all interfaces registerd
   ///@rSubPacket the data to be distributed
-  EFPBondingMessages distributeData(const std::vector<uint8_t> &rSubPacket);
+  EFPBondingMessages distributeDataSingle(const std::vector<uint8_t> &rSubPacket);
 
   ///Returns the statistics fo a interface
   ///@interfaceID the ID of the interface to get statistics for
-  EFPBonding::EFPStatistics getStatistics(EFPBonding::EFPBondingID interfaceID);
+  ///@groupID the ID of the group to get statistics for if not provided the statistics will be from a interface not belonging to a group.
+  EFPStatistics getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID = 0);
+
+  ///Modify a interface commit level
+  ///@commit The new % commit.
+  ///@offset The new offset (only valid for single interface commit changes not for groups)
+  ///@interfaceID the ID of the interface to change
+  ///@groupID the ID of the group to change. If the interface do not belong to a group leave this parametar or set to 0
+  EFPBondingMessages modifyInterfaceCommit(double commit, double offset, EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID = 0);
 
   ///Returns the total number of fragments dealt with by EFPBonding
   uint64_t getGlobalPacketCounter();
 
+  ///re-sets the globsal packet counter
+  void clearGlobalPacketCounter();
+
+  ///Returns a unique interfaceID
+  EFPBondingInterfaceID generateInterfaceID();
+
+  //Group part
+
+  ///Adds a group of interfaces to EFPBonding
+  ///@rInterfaces A list/vector of EFPInterfaces to be grouped together
+  EFPBondingGroupID addInterfaceGroup(std::vector<EFPInterface> &rInterfaces);
+
+  ///Distributes the data to all groups registerd
+  ///@rSubPacket the data to be distributed
+  EFPBondingMessages distributeDataGroup(const std::vector<uint8_t> &rSubPacket);
+
+  ///Removes a interface group from EFPBonding
+  ///@groupID the ID of the group to remove
+  EFPBondingMessages removeGroup(EFPBondingGroupID groupID);
+
   ///Current payload coverage
-  uint64_t mCurrentCoverage = 0;
+  double mCurrentCoverage = 0;
 
 private:
-  class EFPInterfaceProps {
-  public:
-    std::function<void(const std::vector<uint8_t> &)> mInterfaceLocation = nullptr;
-    uint64_t mCommit = 0;
-    EFPBondingID mInterfaceID = 0;
-    double mFireCounter = 0;
-    bool mMasterInterface = false;
-    std::atomic_uint64_t mPacketCounter;
-    std::atomic_uint64_t mForwardMissingFragment;
-  };
 
-  uint64_t getCoverage();
+  double getCoverage();
 
-  std::atomic_uint64_t mGlobalPacketCounter;
-  EFPBondingID mUniqueInterfaceID = 1;
-  bool mGotMasterInterface = false;
-  std::vector<std::unique_ptr<EFPInterfaceProps>> mInterfaceList;
+  uint64_t mGlobalPacketCounter = 0;
+  uint64_t mMonotonicPacketCounter = 0;
+
+  EFPBondingInterfaceID mUniqueInterfaceID = 1;
+  EFPBondingGroupID mUniqueGroupID = 1;
+
+  std::vector<std::unique_ptr<EFPInterface>> mInterfaceList;
+  std::vector<std::vector<std::unique_ptr<EFPInterface>>> mGroupList;
+
+  std::function<void(const std::vector<uint8_t> &)> mMasterInterfaceLocation = nullptr;
+
 
 };
 
