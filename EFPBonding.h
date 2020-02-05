@@ -82,29 +82,18 @@ public:
   ///Return the version of the current implementation
   uint16_t getVersion() { return (EFP_BONDING_MAJOR_VERSION << 8) | EFP_BONDING_MINOR_VERSION; }
 
-  ///Adds a interface to EFPBonding
-  ///@rInterface A EFPInterface to be added
-  EFPBondingInterfaceID addInterface(EFPInterface &rInterface);
-
-  ///Removes a interface from EFPBonding
-  ///@interfaceID the ID of the interface to remove
-  EFPBondingMessages removeInterface(EFPBondingInterfaceID interfaceID);
-
-  ///Distributes the data to all interfaces registerd
-  ///@rSubPacket the data to be distributed
-  EFPBondingMessages distributeDataSingle(const std::vector<uint8_t> &rSubPacket);
 
   ///Returns the statistics fo a interface
   ///@interfaceID the ID of the interface to get statistics for
   ///@groupID the ID of the group to get statistics for if not provided the statistics will be from a interface not belonging to a group.
-  EFPStatistics getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID = 0);
+  EFPStatistics getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID);
 
   ///Modify a interface commit level
   ///@commit The new % commit.
   ///@offset The new offset (only valid for single interface commit changes not for groups)
   ///@interfaceID the ID of the interface to change
   ///@groupID the ID of the group to change. If the interface do not belong to a group leave this parametar or set to 0
-  EFPBondingMessages modifyInterfaceCommit(double commit, double offset, EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID = 0);
+  EFPBondingMessages modifyInterfaceCommit(double commit, EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID);
 
   ///Returns the total number of fragments dealt with by EFPBonding
   uint64_t getGlobalPacketCounter();
@@ -134,19 +123,13 @@ public:
 
 private:
 
-  double getCoverage();
-
   uint64_t mGlobalPacketCounter = 0;
   uint64_t mMonotonicPacketCounter = 0;
 
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
 
-  std::vector<std::unique_ptr<EFPInterface>> mInterfaceList;
   std::vector<std::vector<std::unique_ptr<EFPInterface>>> mGroupList;
-
-  std::function<void(const std::vector<uint8_t> &)> mMasterInterfaceLocation = nullptr;
-
 
 };
 

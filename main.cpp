@@ -27,49 +27,11 @@ struct PrivateData {
 };
 
 void sendData(const std::vector<uint8_t> &rSubPacket) {
-  myEFPBonding.distributeDataSingle(rSubPacket);
-}
-
-void sendDataGroup(const std::vector<uint8_t> &rSubPacket) {
   myEFPBonding.distributeDataGroup(rSubPacket);
 }
 
 
 void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
-  if (rPacket->mBroken) {
-    std::cout << "Frame is broken" << std::endl;
-    return;
-  }
-
-  if (!(rPacket->mPts % 100)) {
-    std::cout << "Got packet number " << unsigned(rPacket->mPts - 1000) << std::endl;
-    for (int x=0;x<NO_INTERFACES;x++) {
-      EFPBonding::EFPStatistics thisInterfaceStatistics = myEFPBonding.getStatistics(interfacesID[x]);
-      std::cout << "If: " << unsigned(x) <<
-      " fragments: " << unsigned(thisInterfaceStatistics.mNoFragmentsSent) <<
-      " part: " << thisInterfaceStatistics.mPercentOfTotalTraffic << "%" <<
-      " cover fragments: " << unsigned(thisInterfaceStatistics.mNoGapsCoveredFor) <<
-      std::endl;
-
-      if (groupOfPackets == 0) {
-        std::cout << "Changing if1 configuration to commit 60% from 40% offset and if2 commit 40% from 0 offset" << std::endl;
-        EFPBondingMessages efpBondResult = myEFPBonding.modifyInterfaceCommit(60,0,interfacesID[0]);
-        if (efpBondResult != EFPBondingMessages::noError) {
-          std::cout << "Failed configuring interface 1." << std::endl;
-        }
-        efpBondResult = myEFPBonding.modifyInterfaceCommit(40,60,interfacesID[1]);
-        if (efpBondResult != EFPBondingMessages::noError) {
-          std::cout << "Failed configuring interface 2." << std::endl;
-        }
-      }
-      groupOfPackets++;
-
-    }
-    std::cout << "TotalFragments sent: " << myEFPBonding.getGlobalPacketCounter() << std::endl;
-  }
-}
-
-void gotDataGroup(ElasticFrameProtocol::pFramePtr &rPacket) {
   if (rPacket->mBroken) {
     std::cout << "Frame is broken" << std::endl;
     return;
@@ -134,97 +96,12 @@ int main() {
   myEFPReceiver.receiveCallback = std::bind(&gotData, std::placeholders::_1);
   myEFPReceiver.startReceiver(5, 2);
 
+  //Interface
   EFPBonding::EFPInterface lInterface;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface1,std::placeholders::_1);
-  lInterface.mCommit = 500;
-  lInterface.mMasterInterface = MASTER_INTERFACE;
-  EFPBonding::EFPBondingInterfaceID ifID = myEFPBonding.addInterface(lInterface);
-  if (!ifID) {
-    std::cout << "Test1 complete. Failed adding interface" << std::endl;
-  } else {
-    std::cout << "Test1 failed" << std::endl;
-    return EXIT_FAILURE;
-  }
-
-
-  lInterface.mInterfaceLocation = std::bind(&networkInterface1,std::placeholders::_1);
-  lInterface.mCommit = 60;
-  lInterface.mMasterInterface = MASTER_INTERFACE;
-  interfacesID[0] = myEFPBonding.addInterface(lInterface);
-  lInterface.mInterfaceLocation = std::bind(&networkInterface2,std::placeholders::_1);
-  lInterface.mCommit = 40;
-  lInterface.mMasterInterface = NORMAL_INTERFACE;
-  interfacesID[1] = myEFPBonding.addInterface(lInterface);
-  lInterface.mInterfaceLocation = std::bind(&networkInterface3,std::placeholders::_1);
-  lInterface.mCommit = 100;
-  lInterface.mMasterInterface = NORMAL_INTERFACE;
-  //interfacesID[2] = myEFPBonding.addInterface(lInterface);
-
- // if (myEFPBonding.mCurrentCoverage != 200) {
- //   std::cout << "Test3 failed" << std::endl;
- //   return EXIT_FAILURE;
- // }
-
-  //std::cout << "Added 3 interfaces (Test1). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
-
-  //EFPBondingMessages efpBondResult = myEFPBonding.removeInterface(interfacesID[1]);
-  //if (myEFPBonding.mCurrentCoverage != 150 || efpBondResult != EFPBondingMessages::noError) {
-  //  std::cout << "Test4 failed" << std::endl;
-  //  return EXIT_FAILURE;
-  //}
-
-  //std::cout << "Removed interface 2 (Test2). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
-
-  //lInterface.mInterfaceLocation = std::bind(&networkInterface2,std::placeholders::_1);
-  //lInterface.mCommit = 40;
-  //lInterface.mOffset = 60;
-  //lInterface.mMasterInterface = NORMAL_INTERFACE;
-  //interfacesID[1] = myEFPBonding.addInterface(lInterface);
-
-  //if (myEFPBonding.mCurrentCoverage != 200) {
-  //  std::cout << "Test5 failed" << std::endl;
-  //  return EXIT_FAILURE;
-  //}
-
-  //If you remove the comments below and change interface interfacesID[1] to offset 0
-  //you will get 100% payload but 50% coverage. cover fragments statistics for the master inteface will start counting
-  //std::cout << "Added interface 2 again (Test3). My coverage is: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
-  //myEFPBonding.removeInterface(interfacesID[2]);
-  //std::cout << "Final coverage: " << myEFPBonding.mCurrentCoverage << "%" << std::endl;
-
-  std::vector<uint8_t> mydata;
-  for (int packetNumber=0;packetNumber < 440; packetNumber++) {
-    mydata.clear();
-    size_t randSize = rand() % 1000000 + 1;
-    mydata.resize(randSize);
-    std::generate(mydata.begin(), mydata.end(), [n = 0]() mutable { return n++; });
-    PrivateData myPrivateData;
-    myPrivateData.sizeOfData = mydata.size() + sizeof(PrivateData) + 4; //4 is the embedded frame header size
-    myEFPSender.addEmbeddedData(&mydata, &myPrivateData, sizeof(PrivateData), ElasticEmbeddedFrameContent::embeddedprivatedata, true);
-    if (myPrivateData.sizeOfData != mydata.size()) {
-      std::cout << "Packer error" << std::endl;
-    }
-    ElasticFrameMessages result = myEFPSender.packAndSend(mydata, ElasticFrameContent::h264, packetNumber+1001, packetNumber+1, EFP_CODE('A', 'N', 'X', 'B'), 4, INLINE_PAYLOAD);
-    if (result != ElasticFrameMessages::noError) {
-      std::cout << "packAndSend error"
-                << std::endl;
-    }
-  }
-
-  return 0;
-
-  // Group part
-
-  myEFPBonding.clearGlobalPacketCounter();
-
-  //Change the callbacks to the group versions
-  myEFPSender.sendCallback = std::bind(&sendDataGroup, std::placeholders::_1);
-  myEFPReceiver.receiveCallback = std::bind(&gotDataGroup, std::placeholders::_1);
-
-  //Configure the group interface
+  //Group interface
   std::vector<EFPBonding::EFPInterface> lInterfaces;
 
-  ifID = myEFPBonding.generateInterfaceID();
+  EFPBonding::EFPBondingInterfaceID ifID = myEFPBonding.generateInterfaceID();
   lInterface.mInterfaceID = ifID;
   groupInterfacesID[0] = ifID;
   lInterface.mInterfaceLocation = std::bind(&networkInterface1, std::placeholders::_1);
@@ -254,7 +131,7 @@ int main() {
 
   groupID[0] = bondingGroupID;
 
-
+  std::vector<uint8_t> mydata;
   for (int packetNumber=0;packetNumber < 440; packetNumber++) {
     mydata.clear();
     size_t randSize = rand() % 1000000 + 1;
