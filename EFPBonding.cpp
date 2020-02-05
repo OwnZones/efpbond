@@ -118,7 +118,7 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
   if (!currentPercentage) {
     for (auto const &rInterfaces: mGroupList) {
       for (auto const &rInterface: rInterfaces) {
-        rInterface->mFireCounter = rInterface->mCommit;
+        rInterface->mFireCounter += rInterface->mCommit;
       }
     }
   }
@@ -127,7 +127,7 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
 
     bool didSendSomething = false;
     for (auto const &rInterface: rInterfaces) {
-      if (rInterface->mFireCounter) {
+      if (rInterface->mFireCounter >= 1.0) {
         didSendSomething = true;
         rInterface->mFireCounter--;
         rInterface->mInterfaceLocation(rSubPacket);

@@ -59,12 +59,12 @@ public:
   public:
     EFPBondingInterfaceID mInterfaceID = 0;
     EFPBondingGroupID mGroupID = 0;
-    uint64_t mFireCounter = 0;
+    double mFireCounter = 0;
     uint64_t mPacketCounter = 0;
     uint64_t mForwardMissingFragment = 0;
     std::function<void(const std::vector<uint8_t> &)> mInterfaceLocation = nullptr;
     bool mMasterInterface = NORMAL_INTERFACE;
-    uint64_t mCommit = 0;
+    double mCommit = 0;
   };
 
   ///Constructor
