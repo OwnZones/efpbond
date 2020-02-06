@@ -17,7 +17,7 @@ The EFPBond is acting as a data distributor from [ElasticFrameProtocol](https://
 
 ```
 
-The bonding plug-in makes it possible to use multiple interfaces to create a highet total trougput (bonding) and for protecting the data sending the same data over multiple interfaces (1+n).
+The bonding plug-in makes it possible to use multiple interfaces to create a higher total trougput (bonding) and for protecting the data sending the same data over multiple interfaces (1+n).
 
 You can for example send data over a mix of any UDP/SRT/TCP as illustrated above.
 
@@ -57,36 +57,7 @@ See the source code for examples on how to use EFPBond.
 
 The EFPBond is configured by ->
 
-**Step 1**
-
-Create your EFPBonding worker.
-
-```
-EFPBonding myEFPBonding;
-```
-
-**Step 2**
-
-Add your interfaces.
-
-```
-  interfacesID[0] = myEFPBonding.addInterface(std::bind(&networkInterface1,std::placeholders::_1), 50, 0, MASTER_INTERFACE);
-  interfacesID[1] = myEFPBonding.addInterface(std::bind(&networkInterface2,std::placeholders::_1), 50, 50, NORMAL_INTERFACE);
-  interfacesID[2] = myEFPBonding.addInterface(std::bind(&networkInterface3,std::placeholders::_1), 100, 0, NORMAL_INTERFACE);
-  
-  //addInterface returns the unique handle for that interface. 0 means failed to add interface.
-  
-```
-
-**Step 3**
-
-In your send data callback in EFP relay the packet trough the EFPBonding.
-
-```
-void sendData(const std::vector<uint8_t> &rSubPacket) {
-  myEFPBonding.distributeData(rSubPacket);
-}
-```
+**WIP**
 
 ## Using EFPBonding in your CMake project
 
