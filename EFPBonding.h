@@ -17,8 +17,8 @@
 #include <vector>
 #include <iostream>
 
-#define EFP_BONDING_MAJOR_VERSION 1
-#define EFP_BONDING_MINOR_VERSION 0
+#define EFP_BONDING_MAJOR_VERSION 0
+#define EFP_BONDING_MINOR_VERSION 1
 
 #define MASTER_INTERFACE true
 #define NORMAL_INTERFACE false
@@ -53,6 +53,7 @@ public:
     double mPercentOfTotalTraffic = 0;
   };
 
+  //FIXME add information
   class EFPInterface {
   public:
     EFPBondingInterfaceID mInterfaceID = 0;
@@ -65,6 +66,7 @@ public:
     double mCommit = 0;
   };
 
+  //FIXME add information
   class EFPInterfaceCommit {
   public:
     double mCommit = 0;
@@ -111,8 +113,6 @@ public:
   ///Returns a unique interfaceID
   EFPBondingInterfaceID generateInterfaceID();
 
-  //Group part
-
   ///Adds a group of interfaces to EFPBonding
   ///@rInterfaces A list/vector of EFPInterfaces to be grouped together
   EFPBondingGroupID addInterfaceGroup(std::vector<EFPInterface> &rInterfaces);
@@ -130,14 +130,12 @@ public:
 
 private:
 
+  //FIXME add information
   uint64_t mGlobalPacketCounter = 0;
   uint64_t mMonotonicPacketCounter = 0;
-
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
-
   std::vector<std::vector<std::shared_ptr<EFPInterface>>> mGroupList;
-
 };
 
 #endif //EFPBOND__EFPBONDING_H

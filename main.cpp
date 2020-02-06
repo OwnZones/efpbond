@@ -83,14 +83,14 @@ void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
 }
 
 void networkInterface1(const std::vector<uint8_t> &rSubPacket) {
-  //Send the data trough this interface.
+  //Send the data trough this interface. 0% loss
   //Send_if1(rSubPacket);
   //On the recieving side we get the fragment and assemble the superframe
   myEFPReceiver.receiveFragment(rSubPacket,0);
 }
 
 void networkInterface2(const std::vector<uint8_t> &rSubPacket) {
-  //Send the data trough this interface.
+  //Send the data trough this interface. 0% loss
   //Send_if2(rSubPacket);
   //On the recieving side we get the fragment and assemble the superframe
   myEFPReceiver.receiveFragment(rSubPacket,0);
@@ -98,7 +98,7 @@ void networkInterface2(const std::vector<uint8_t> &rSubPacket) {
 
 int dataLoss;
 void networkInterface3(const std::vector<uint8_t> &rSubPacket) {
-  //Send the data trough this interface.
+  //Send the data trough this interface. 50% loss
   //Send_if3(rSubPacket);
   //On the recieving side we get the fragment and assemble the superframe
   if (dataLoss++ & 1) {
@@ -107,8 +107,8 @@ void networkInterface3(const std::vector<uint8_t> &rSubPacket) {
 }
 
 void networkInterface4(const std::vector<uint8_t> &rSubPacket) {
-  //Send the data trough this interface.
-  //Send_if3(rSubPacket);
+  //Send the data trough this interface. 0% loss
+  //Send_if4(rSubPacket);
   //On the recieving side we get the fragment and assemble the superframe
     myEFPReceiver.receiveFragment(rSubPacket, 0);
 
@@ -131,13 +131,21 @@ int main() {
   //Group interface
   std::vector<EFPBonding::EFPInterface> lInterfaces;
 
+  //Get a ID from EFPBonding
   EFPBonding::EFPBondingInterfaceID ifID = myEFPBonding.generateInterfaceID();
+  //I assign that but also store it so that I can target this interface later
   lInterface.mInterfaceID = ifID;
   groupInterfacesID[0] = ifID;
+  //I provide the callback where the 'sendto' is located
   lInterface.mInterfaceLocation = std::bind(&networkInterface1, std::placeholders::_1);
+
+  //At least one interface has to be a master interface in the group
   lInterface.mMasterInterface = MASTER_INTERFACE;
+
+  //Put the interface into a vector of interfaces
   lInterfaces.push_back(lInterface);
 
+  //Do the same for the other interfaces
   ifID = myEFPBonding.generateInterfaceID();
   lInterface.mInterfaceID = ifID;
   groupInterfacesID[1] = ifID;
@@ -153,16 +161,19 @@ int main() {
   lInterfaces.push_back(lInterface);
 
 
+  //When done push the interfaces to EFPBonding creating a EFPBonding-group
   EFPBonding::EFPBondingGroupID bondingGroupID = myEFPBonding.addInterfaceGroup(lInterfaces);
   if (!bondingGroupID) {
-    std::cout << "Test6 failed" << std::endl;
+    std::cout << "Test1 failed" << std::endl;
     return EXIT_FAILURE;
   }
 
+  //Store the group ID for controlling the group later.
   groupID[0] = bondingGroupID;
 
+  //Send data
   std::vector<uint8_t> mydata;
-  for (int packetNumber=0;packetNumber < 440; packetNumber++) {
+  for (int packetNumber=0;packetNumber < 340; packetNumber++) {
     mydata.clear();
     size_t randSize = rand() % 1000000 + 1;
     mydata.resize(randSize);
@@ -175,16 +186,16 @@ int main() {
     }
     ElasticFrameMessages result = myEFPSender.packAndSend(mydata, ElasticFrameContent::h264, packetNumber+1001, packetNumber+1, EFP_CODE('A', 'N', 'X', 'B'), 4, INLINE_PAYLOAD);
     if (result != ElasticFrameMessages::noError) {
-      std::cout << "packAndSend error"
-                << std::endl;
+      std::cout << "packAndSend error" << std::endl;
+      return EXIT_FAILURE;
     }
   }
 
-  //efpBondResult = myEFPBonding.removeGroup(groupID[0]);
-  //if (efpBondResult != EFPBondingMessages::noError) {
-  //  std::cout << "Failed removing group" << std::endl;
-  //  return EXIT_FAILURE;
-  //}
+  EFPBondingMessages efpBondResult = myEFPBonding.removeGroup(groupID[0]);
+  if (efpBondResult != EFPBondingMessages::noError) {
+    std::cout << "Failed removing group" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   return EXIT_SUCCESS;
 }

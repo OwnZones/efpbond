@@ -16,6 +16,7 @@ EFPBonding::~EFPBonding() {
   LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
 }
 
+//FIXME - Code is not optimized.
 EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit) {
 
   if (rInterfaceCommit.mCommit < 1.0 || rInterfaceCommit.mCommit > 100.0 || !rInterfaceCommit.mGroupID
@@ -72,6 +73,7 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
   return EFPBondingMessages::noError;
 }
 
+//FIXME - Code is not optimized.
 EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EFPInterfaceCommit> &rInterfacesCommit) {
 
   double lTotalCommit = 0;
@@ -87,7 +89,7 @@ EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EF
     }
   }
   if (lTotalCommit != 100.0 || !lCurrentGroup) {
-    return EFPBondingMessages::parameterError;
+    return EFPBondingMessages::coverageNot100Percent;
   }
 
   std::vector<std::shared_ptr<EFPInterface>> lThisGroupsInterfaces;
@@ -208,6 +210,7 @@ EFPBondingMessages EFPBonding::removeGroup(EFPBondingGroupID groupID) {
 
 }
 
+//FIXME - add round robin type distribution between the interfaces.
 EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &rSubPacket) {
   if (!mGroupList.size()) {
     return EFPBondingMessages::noGroupsFound;
