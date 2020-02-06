@@ -18,7 +18,8 @@ EFPBonding::~EFPBonding() {
 
 EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit) {
 
-  if (rInterfaceCommit.mCommit < 1.0 || rInterfaceCommit.mCommit > 100.0 || !rInterfaceCommit.mGroupID || !rInterfaceCommit.mInterfaceID) {
+  if (rInterfaceCommit.mCommit < 1.0 || rInterfaceCommit.mCommit > 100.0 || !rInterfaceCommit.mGroupID
+      || !rInterfaceCommit.mInterfaceID) {
     return EFPBondingMessages::parameterError;
   }
 
@@ -27,7 +28,7 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
   double lNewCommitDiff = 0;
   bool foundInterface = false;
 
-  //FIXME remove
+  //FIXME remove all debug when feeling confident
   double forDebuggingCalculation = 0;
 
   for (auto const &rInterfaces: mGroupList) {
@@ -66,9 +67,56 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
     forDebuggingCalculation += rInterface->mCommit;
   }
 
-
   LOGGER(false, LOGG_NOTIFY, "Calculation error diff: " << (100.0 - forDebuggingCalculation))
 
+  return EFPBondingMessages::noError;
+}
+
+EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EFPInterfaceCommit> &rInterfacesCommit) {
+
+  double lTotalCommit = 0;
+  EFPBonding::EFPBondingGroupID lCurrentGroup = 0;
+
+  for (auto const &rThisCommit: rInterfacesCommit) {
+    lTotalCommit += rThisCommit.mCommit;
+    if (!lCurrentGroup) {
+      lCurrentGroup = rThisCommit.mGroupID;
+    } else if (rThisCommit.mGroupID != lCurrentGroup) {
+      LOGGER(true, LOGG_ERROR, "Not allowed to provide more than one group ID")
+      return EFPBondingMessages::parameterError;
+    }
+  }
+  if (lTotalCommit != 100.0 || !lCurrentGroup) {
+    return EFPBondingMessages::parameterError;
+  }
+
+  std::vector<std::shared_ptr<EFPInterface>> lThisGroupsInterfaces;
+  for (auto const &rInterfaces: mGroupList) {
+    for (auto const &rInterface: rInterfaces) {
+      if (rInterface->mGroupID == lCurrentGroup) {
+        for (auto const &rNewCommit: rInterfacesCommit) {
+          if (rNewCommit.mInterfaceID == rInterface->mInterfaceID) {
+            lThisGroupsInterfaces.push_back(rInterface);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (lThisGroupsInterfaces.size() != rInterfacesCommit.size()) {
+    LOGGER(true, LOGG_ERROR, "Interface number and setting number does not match")
+    return EFPBondingMessages::parameterError;
+  }
+
+  //Ok everything seams ok let's push the new settings
+  for (auto const &rInterface: lThisGroupsInterfaces) {
+    for (auto const &rNewCommit: rInterfacesCommit) {
+      if (rNewCommit.mInterfaceID == rInterface->mInterfaceID) {
+        rInterface->mCommit = rNewCommit.mCommit;
+      }
+    }
+  }
 
   return EFPBondingMessages::noError;
 }
@@ -110,7 +158,6 @@ void EFPBonding::clearGlobalPacketCounter() {
 EFPBonding::EFPBondingInterfaceID EFPBonding::generateInterfaceID() {
   return mUniqueInterfaceID++;
 }
-
 
 EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInterface> &rInterfaces) {
   if (!rInterfaces.size()) { //We need at least a interface

@@ -98,6 +98,10 @@ public:
   ///@rInterfaceCommit The new % commit for the interface specified in EFPInterfaceCommit
   EFPBondingMessages modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit);
 
+  ///Modify all interfaces commit level for a group
+  ///@rInterfacesCommit a vector od new % commits for the interfaces specified in EFPInterfaceCommit
+  EFPBondingMessages modifyTotalGroupCommit(std::vector<EFPBonding::EFPInterfaceCommit> &rInterfacesCommit);
+
   ///Returns the total number of fragments dealt with by EFPBonding
   uint64_t getGlobalPacketCounter();
 

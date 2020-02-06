@@ -57,6 +57,23 @@ void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
       myInterfaceCommit.mInterfaceID = groupInterfacesID[1];
       myEFPBonding.modifyInterfaceCommit(myInterfaceCommit);
 
+    } else if (groupOfPackets == 1) {
+      std::vector<EFPBonding::EFPInterfaceCommit> myInterfaceCommits;
+
+      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
+      myInterfaceCommit.mCommit = 25;
+      myInterfaceCommit.mGroupID = groupID[0];
+      myInterfaceCommit.mInterfaceID = groupInterfacesID[0];
+      myInterfaceCommits.push_back(myInterfaceCommit);
+      myInterfaceCommit.mCommit = 25;
+      myInterfaceCommit.mGroupID = groupID[0];
+      myInterfaceCommit.mInterfaceID = groupInterfacesID[1];
+      myInterfaceCommits.push_back(myInterfaceCommit);
+      myInterfaceCommit.mCommit = 50;
+      myInterfaceCommit.mGroupID = groupID[0];
+      myInterfaceCommit.mInterfaceID = groupInterfacesID[2];
+      myInterfaceCommits.push_back(myInterfaceCommit);
+      myEFPBonding.modifyTotalGroupCommit(myInterfaceCommits);
     }
 
     groupOfPackets++;
