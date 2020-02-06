@@ -3,17 +3,16 @@
 #include "EFPBonding.h"
 
 #define MTU 1456 //SRT-max
-#define NO_INTERFACES 3
 
 #define NO_GROUP_INTERFACES 3
 #define NO_GROUPS 1
 
+//EFP
 ElasticFrameProtocol myEFPSender(MTU,ElasticFrameMode::sender);
 ElasticFrameProtocol myEFPReceiver;
 
+//EFP Bonding plug-in
 EFPBonding myEFPBonding;
-
-EFPBonding::EFPBondingInterfaceID interfacesID[NO_INTERFACES];
 
 EFPBonding::EFPBondingInterfaceID groupInterfacesID[NO_GROUP_INTERFACES];
 EFPBonding::EFPBondingGroupID groupID[NO_GROUPS];
@@ -40,7 +39,7 @@ void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
   if (!(rPacket->mPts % 100)) {
     std::cout << "Got packet number " << unsigned(rPacket->mPts - 1000) << std::endl;
     for (int x=0;x<NO_GROUP_INTERFACES;x++) {
-      EFPBonding::EFPStatistics thisInterfaceStatistics = myEFPBonding.getStatistics(groupInterfacesID[x], groupID[0]);
+      EFPBonding::EFPStatistics thisInterfaceStatistics = myEFPBonding.getStatistics(groupInterfacesID[x], groupID[0], true);
       std::cout << "If: " << unsigned(x) <<
                 " fragments: " << unsigned(thisInterfaceStatistics.mNoFragmentsSent) <<
                 " part: " << thisInterfaceStatistics.mPercentOfTotalTraffic << "%" <<
@@ -48,6 +47,20 @@ void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
                 std::endl;
     }
     std::cout << "TotalFragments sent: " << myEFPBonding.getGlobalPacketCounter() << std::endl;
+
+    myEFPBonding.clearGlobalPacketCounter();
+
+    if (groupOfPackets == 0) {
+      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
+      myInterfaceCommit.mCommit = 20;
+      myInterfaceCommit.mGroupID = groupID[0];
+      myInterfaceCommit.mInterfaceID = groupInterfacesID[1];
+      myEFPBonding.modifyInterfaceCommit(myInterfaceCommit);
+
+    }
+
+    groupOfPackets++;
+
   }
 
 }

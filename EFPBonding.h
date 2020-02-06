@@ -27,10 +27,8 @@
 enum class EFPBondingMessages : int16_t {
   interfaceIDNotFound = -10000, //Interface ID not found
   removeGroupNotFound, //Group ID not found
-  masterInterfaceMissing, //Master interface not configured. Please do that
-  masterInterfaceLocationMissing, //Cant find where to call the master interface
   noGroupsFound, //The list of groups is empty
-  errorWhenChangingCommit, // the parameters given when changing the commit for the interfaces are out of spec.
+  parameterError, // the parameters given when changing the commit for the interfaces are out of spec.
   noError = 0,
   coverageNot100Percent //Warning payload under 100%
 };
@@ -67,6 +65,13 @@ public:
     double mCommit = 0;
   };
 
+  class EFPInterfaceCommit {
+  public:
+    double mCommit = 0;
+    EFPBonding::EFPBondingInterfaceID mInterfaceID = 0;
+    EFPBonding::EFPBondingGroupID mGroupID = 0;
+  };
+
   ///Constructor
   explicit EFPBonding();
 
@@ -86,14 +91,12 @@ public:
   ///Returns the statistics fo a interface
   ///@interfaceID the ID of the interface to get statistics for
   ///@groupID the ID of the group to get statistics for if not provided the statistics will be from a interface not belonging to a group.
-  EFPStatistics getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID);
+  ///@reset resets the packet counter for the interface
+  EFPStatistics getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID, bool reset);
 
   ///Modify a interface commit level
-  ///@commit The new % commit.
-  ///@offset The new offset (only valid for single interface commit changes not for groups)
-  ///@interfaceID the ID of the interface to change
-  ///@groupID the ID of the group to change. If the interface do not belong to a group leave this parametar or set to 0
-  EFPBondingMessages modifyInterfaceCommit(double commit, EFPBonding::EFPBondingInterfaceID interfaceID, EFPBonding::EFPBondingGroupID groupID);
+  ///@rInterfaceCommit The new % commit for the interface specified in EFPInterfaceCommit
+  EFPBondingMessages modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit);
 
   ///Returns the total number of fragments dealt with by EFPBonding
   uint64_t getGlobalPacketCounter();
@@ -129,7 +132,7 @@ private:
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
 
-  std::vector<std::vector<std::unique_ptr<EFPInterface>>> mGroupList;
+  std::vector<std::vector<std::shared_ptr<EFPInterface>>> mGroupList;
 
 };
 
