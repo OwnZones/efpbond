@@ -30,12 +30,8 @@ struct PrivateData {
   size_t sizeOfData = 0;
 };
 
-int g;
 //This is the same thread as EFP packAndSend we can only call EFPBond methods from this thread since EFPBond is not threadsafe!!
 void sendData(const std::vector<uint8_t> &rSubPacket) {
-  if (testNumber == 2) {
-    g++;
-  }
   myEFPBonding.distributeDataGroup(rSubPacket);
   if ((rSubPacket[0] & 0x0f) == 2) {
     superframeCounter++;
