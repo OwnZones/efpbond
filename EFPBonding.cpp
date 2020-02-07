@@ -16,6 +16,7 @@ EFPBonding::~EFPBonding() {
   LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
 }
 
+//Change a interface commit in a group
 EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit) {
 
   if (rInterfaceCommit.mCommit < 1.0 || rInterfaceCommit.mCommit > 100.0 || !rInterfaceCommit.mGroupID
@@ -71,6 +72,7 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
   return EFPBondingMessages::noError;
 }
 
+//Change all commits in a group
 EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EFPInterfaceCommit> &rInterfacesCommit) {
 
   double lTotalCommit = 0;
@@ -121,6 +123,7 @@ EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EF
   return EFPBondingMessages::noError;
 }
 
+//Get statistics for a interface
 EFPBonding::EFPStatistics EFPBonding::getStatistics(EFPBonding::EFPBondingInterfaceID interfaceID,
                                                     EFPBonding::EFPBondingGroupID groupID,
                                                     bool reset) {
@@ -149,24 +152,26 @@ EFPBonding::EFPStatistics EFPBonding::getStatistics(EFPBonding::EFPBondingInterf
   return lMyStatistics;
 }
 
+//Get the global packet counter
 uint64_t EFPBonding::getGlobalPacketCounter() {
   return mGlobalPacketCounter;
 }
 
+//Re-set the global packet counter
 void EFPBonding::clearGlobalPacketCounter() {
   mGlobalPacketCounter = 0;
 }
 
+//Generate unique interfaceID
 EFPBonding::EFPBondingInterfaceID EFPBonding::generateInterfaceID() {
   return mUniqueInterfaceID++;
 }
 
+//Add a interface group to EFPBond
 EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInterface> &rInterfaces) {
   if (!rInterfaces.size()) { //We need at least a interface
     return 0;
   }
-
-  mMonotonicPacketCounter = 0;
 
   //Auto assign offset and coverage
   double lCommit = 100.0 / (double) rInterfaces.size();
@@ -212,7 +217,6 @@ EFPBondingMessages EFPBonding::removeGroup(EFPBondingGroupID groupID) {
   return EFPBondingMessages::removeGroupNotFound;
 }
 
-//FIXME - add round robin type distribution between the interfaces.
 EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &rSubPacket) {
   if (!mGroupList.size()) {
     return EFPBondingMessages::noGroupsFound;
@@ -227,19 +231,18 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
     }
   }
 
+
   for (auto const &rGroup: mGroupList) {
-    bool didSendSomething = false;
+    std::vector<std::shared_ptr<EFPInterface>> lRoundRobinInterfaces;
     for (auto const &rInterface: rGroup.mGroupInterfaces) {
       if (rInterface->mFireCounter >= 1.0) {
-        didSendSomething = true;
-        rInterface->mFireCounter--;
-        rInterface->mInterfaceLocation(rSubPacket);
-        rInterface->mFragmentCounter++;
-        break;
+        lRoundRobinInterfaces.push_back(rInterface);
       }
     }
 
-    if (!didSendSomething) {
+    //This if covers for fractional calculation to integer loops (you can't send 0,113 fragments for example
+    //Example 1/3 equals integer 33% * 3interfaces has at 100% sent 99% data in the first revolution.
+    if (!lRoundRobinInterfaces.size()) {
       for (auto const &rInterface: rGroup.mGroupInterfaces) {
         if (rInterface->mMasterInterface) {
           rInterface->mInterfaceLocation(rSubPacket);
@@ -247,6 +250,11 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
           rInterface->mForwardMissingFragment++;
         }
       }
+    } else {
+      uint64_t targetInterface = mMonotonicPacketCounter % lRoundRobinInterfaces.size();
+      lRoundRobinInterfaces[targetInterface]->mFireCounter--;
+      lRoundRobinInterfaces[targetInterface]->mInterfaceLocation(rSubPacket);
+      lRoundRobinInterfaces[targetInterface]->mFragmentCounter++;
     }
   }
 

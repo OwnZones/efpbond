@@ -58,9 +58,9 @@ public:
   ///@mInterfaceID The unique ID of this interface
   ///@mFireCounter The fragment counter for this interface (The commit counter)
   ///@mFragmentCounter Number of fragments sent trough this interface
-  ///@mForwardMissingFragment The number of fragments sent trough this interface due to calculation errors (Debug.. keep for now)
+  ///@mForwardMissingFragment The number of fragments sent trough this interface due to calculation fractions
   ///@mInterfaceLocation The location of the interface callback
-  ///@mMasterInterface If this is the master interface (Debug... keep for now)
+  ///@mMasterInterface If this is the master interface
   ///@mCommit % of total traffic this interface committed to.
   class EFPInterface {
   public:
@@ -144,10 +144,8 @@ public:
   EFPBondingMessages removeGroup(EFPBondingGroupID groupID);
 
 private:
-  
+
   uint64_t mGlobalPacketCounter = 0;
-  //FIXME mMonotonicPacketCounter is not monotonic since we have to reset when adding new groups..
-  //FIXME fix how to deal with adding and deleting groups.
   uint64_t mMonotonicPacketCounter = 0;
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
