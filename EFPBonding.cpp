@@ -16,7 +16,6 @@ EFPBonding::~EFPBonding() {
   LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
 }
 
-//FIXME - Code is not optimized.
 EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCommit &rInterfaceCommit) {
 
   if (rInterfaceCommit.mCommit < 1.0 || rInterfaceCommit.mCommit > 100.0 || !rInterfaceCommit.mGroupID
@@ -32,9 +31,9 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
   //FIXME remove all debug when feeling confident
   double forDebuggingCalculation = 0;
 
-  for (auto const &rInterfaces: mGroupList) {
-    for (auto const &rInterface: rInterfaces) {
-      if (rInterface->mGroupID == rInterfaceCommit.mGroupID) {
+  for (auto const &rGroup: mGroupList) {
+    if (rGroup.mGroupID == rInterfaceCommit.mGroupID) {
+      for (auto const &rInterface: rGroup.mGroupInterfaces) {
         if (rInterface->mInterfaceID != rInterfaceCommit.mInterfaceID) {
           lSumOfCommits += rInterface->mCommit;
           lThisGroupsInterfaces.push_back(rInterface);
@@ -53,7 +52,6 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
   }
 
   //recalculate the commitment for the other interfaces based on their current relative commitment
-
   for (auto const &rInterface: lThisGroupsInterfaces) {
     //If a interface has 0% commit then you can't ask nothing to become something without forcing it.
     if (rInterface->mCommit > 0.0) {
@@ -63,17 +61,16 @@ EFPBondingMessages EFPBonding::modifyInterfaceCommit(EFPBonding::EFPInterfaceCom
     }
   }
 
-  //For debugging now
+  //For debugging now -Start
   for (auto const &rInterface: lThisGroupsInterfaces) {
     forDebuggingCalculation += rInterface->mCommit;
   }
-
   LOGGER(false, LOGG_NOTIFY, "Calculation error diff: " << (100.0 - forDebuggingCalculation))
+  //For debugging now -End
 
   return EFPBondingMessages::noError;
 }
 
-//FIXME - Code is not optimized.
 EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EFPInterfaceCommit> &rInterfacesCommit) {
 
   double lTotalCommit = 0;
@@ -93,9 +90,10 @@ EFPBondingMessages EFPBonding::modifyTotalGroupCommit(std::vector<EFPBonding::EF
   }
 
   std::vector<std::shared_ptr<EFPInterface>> lThisGroupsInterfaces;
-  for (auto const &rInterfaces: mGroupList) {
-    for (auto const &rInterface: rInterfaces) {
-      if (rInterface->mGroupID == lCurrentGroup) {
+  for (auto const &rGroup: mGroupList) {
+    if (rGroup.mGroupID == lCurrentGroup) {
+      //We cant just copy all interfaces here we need to validate the ID is part of the rInterfacesCommit list.
+    for (auto const &rInterface: rGroup.mGroupInterfaces) {
         for (auto const &rNewCommit: rInterfacesCommit) {
           if (rNewCommit.mInterfaceID == rInterface->mInterfaceID) {
             lThisGroupsInterfaces.push_back(rInterface);
@@ -131,20 +129,22 @@ EFPBonding::EFPStatistics EFPBonding::getStatistics(EFPBonding::EFPBondingInterf
   if (!interfaceID || !groupID || !mGroupList.size()) {
     return lMyStatistics;
   }
-  for (auto const &rInterfaces: mGroupList) {
-    for (auto const &rInterface: rInterfaces) {
-      if (rInterface->mInterfaceID == interfaceID && rInterface->mGroupID == groupID) {
-        lMyStatistics.mNoFragmentsSent = rInterface->mPacketCounter;
+  for (auto const &rGroup: mGroupList) {
+    if (rGroup.mGroupID == groupID) {
+    for (auto const &rInterface: rGroup.mGroupInterfaces) {
+      if (rInterface->mInterfaceID == interfaceID) {
+        lMyStatistics.mNoFragmentsSent = rInterface->mFragmentCounter;
         lMyStatistics.mNoGapsCoveredFor = rInterface->mForwardMissingFragment;
         lMyStatistics.mPercentOfTotalTraffic =
-            ((double) rInterface->mPacketCounter / (double) mGlobalPacketCounter) * 100.0;
+            ((double) rInterface->mFragmentCounter / (double) mGlobalPacketCounter) * 100.0;
         if (reset) {
-          rInterface->mPacketCounter = 0;
+          rInterface->mFragmentCounter = 0;
           rInterface->mForwardMissingFragment = 0;
         }
         return lMyStatistics;
       }
     }
+  }
   }
   return lMyStatistics;
 }
@@ -166,11 +166,14 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     return 0;
   }
 
+  mMonotonicPacketCounter = 0;
+
   //Auto assign offset and coverage
   double lCommit = 100.0 / (double) rInterfaces.size();
   double lOffset = 0.0;
   bool didProvideMasterInterface = false;
-  std::vector<std::shared_ptr<EFPInterface>> lGroupList;
+  EFPGroup lGroup;
+  lGroup.mGroupID = mUniqueGroupID;
   for (auto const &rInterface: rInterfaces) {
     if (rInterface.mMasterInterface) {
       didProvideMasterInterface = true;
@@ -178,13 +181,13 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     std::shared_ptr<EFPInterface> lThisInterface = std::make_shared<EFPInterface>();
     lThisInterface->mInterfaceLocation = rInterface.mInterfaceLocation;
     lThisInterface->mCommit = lCommit;
-    lThisInterface->mFireCounter = lOffset / 100.0;
+    lThisInterface->mFireCounter = rInterface.mCommit;
     lThisInterface->mInterfaceID = rInterface.mInterfaceID;
-    lThisInterface->mGroupID = mUniqueGroupID;
     lThisInterface->mMasterInterface = rInterface.mMasterInterface;
-    lThisInterface->mPacketCounter = 0;
+    lThisInterface->mFragmentCounter = 0;
     lThisInterface->mForwardMissingFragment = 0;
-    lGroupList.push_back(std::move(lThisInterface));
+    lThisInterface->mForwardMissingFragment = 0;
+    lGroup.mGroupInterfaces.push_back(std::move(lThisInterface));
     lOffset += lCommit;
   }
 
@@ -193,21 +196,20 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     return 0;
   }
 
-  mGroupList.push_back(std::move(lGroupList));
+  mGroupList.push_back(std::move(lGroup));
   return mUniqueGroupID++;
 }
 
 EFPBondingMessages EFPBonding::removeGroup(EFPBondingGroupID groupID) {
   int lGroupIndex = 0;
-  for (auto const &interfaceList: mGroupList) {
-    if (interfaceList[0]->mInterfaceID == groupID) {
+  for (auto const &rGroup: mGroupList) {
+    if (rGroup.mGroupID == groupID) {
       mGroupList.erase(mGroupList.begin() + lGroupIndex);
       return EFPBondingMessages::noError;
     }
     lGroupIndex++;
   }
   return EFPBondingMessages::removeGroupNotFound;
-
 }
 
 //FIXME - add round robin type distribution between the interfaces.
@@ -218,30 +220,30 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
 
   uint64_t currentPercentage = mMonotonicPacketCounter % 100;
   if (!currentPercentage) {
-    for (auto const &rInterfaces: mGroupList) {
-      for (auto const &rInterface: rInterfaces) {
+    for (auto const &rGroup: mGroupList) {
+      for (auto const &rInterface: rGroup.mGroupInterfaces) {
         rInterface->mFireCounter += rInterface->mCommit;
       }
     }
   }
 
-  for (auto const &rInterfaces: mGroupList) {
+  for (auto const &rGroup: mGroupList) {
     bool didSendSomething = false;
-    for (auto const &rInterface: rInterfaces) {
+    for (auto const &rInterface: rGroup.mGroupInterfaces) {
       if (rInterface->mFireCounter >= 1.0) {
         didSendSomething = true;
         rInterface->mFireCounter--;
         rInterface->mInterfaceLocation(rSubPacket);
-        rInterface->mPacketCounter++;
+        rInterface->mFragmentCounter++;
         break;
       }
     }
 
     if (!didSendSomething) {
-      for (auto const &rInterface: rInterfaces) {
+      for (auto const &rInterface: rGroup.mGroupInterfaces) {
         if (rInterface->mMasterInterface) {
           rInterface->mInterfaceLocation(rSubPacket);
-          rInterface->mPacketCounter++;
+          rInterface->mFragmentCounter++;
           rInterface->mForwardMissingFragment++;
         }
       }

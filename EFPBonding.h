@@ -2,7 +2,7 @@
 // UnitX Edgeware AB 2020
 //
 
-//Methods are NOT thread safe meaning you can't modify the interfaces while calling other methods.
+//Methods are NOT thread safe meaning you may only call all methods from the same thread as calling distributeDataGroup
 
 // Prefixes used
 // m class member
@@ -16,21 +16,22 @@
 
 #include <vector>
 #include <iostream>
+#include <tuple>
 
 #define EFP_BONDING_MAJOR_VERSION 0
 #define EFP_BONDING_MINOR_VERSION 1
 
-#define MASTER_INTERFACE true
-#define NORMAL_INTERFACE false
+#define EFP_MASTER_INTERFACE true
+#define EFP_NORMAL_INTERFACE false
 
 
 enum class EFPBondingMessages : int16_t {
-  interfaceIDNotFound = -10000, //Interface ID not found
-  removeGroupNotFound, //Group ID not found
-  noGroupsFound, //The list of groups is empty
-  parameterError, // the parameters given when changing the commit for the interfaces are out of spec.
-  noError = 0,
-  coverageNot100Percent //Warning payload under 100%
+  interfaceIDNotFound = -10000, // Interface ID not found
+  removeGroupNotFound,          // Group ID not found
+  noGroupsFound,                // The list of groups is empty
+  parameterError,               // The parameters given when changing the commit for the interfaces are out of spec.
+  noError = 0,                  // No error
+  coverageNot100Percent         // Warning payload under 100%
 };
 
 class EFPBonding {
@@ -53,20 +54,38 @@ public:
     double mPercentOfTotalTraffic = 0;
   };
 
-  //FIXME add information
+  ///EFPInterface
+  ///@mInterfaceID The unique ID of this interface
+  ///@mFireCounter The fragment counter for this interface (The commit counter)
+  ///@mFragmentCounter Number of fragments sent trough this interface
+  ///@mForwardMissingFragment The number of fragments sent trough this interface due to calculation errors (Debug.. keep for now)
+  ///@mInterfaceLocation The location of the interface callback
+  ///@mMasterInterface If this is the master interface (Debug... keep for now)
+  ///@mCommit % of total traffic this interface committed to.
   class EFPInterface {
   public:
     EFPBondingInterfaceID mInterfaceID = 0;
-    EFPBondingGroupID mGroupID = 0;
     double mFireCounter = 0;
-    uint64_t mPacketCounter = 0;
-    uint64_t mForwardMissingFragment = 0;
+    uint64_t mFragmentCounter;
+    uint64_t mForwardMissingFragment; //For debug purpose
     std::function<void(const std::vector<uint8_t> &)> mInterfaceLocation = nullptr;
-    bool mMasterInterface = NORMAL_INTERFACE;
+    bool mMasterInterface = EFP_NORMAL_INTERFACE;  //For debug purpose
     double mCommit = 0;
   };
 
-  //FIXME add information
+  ///EFPGroup
+  ///@mGroupID Group ID
+  ///@mGroupInterfaces The list of interfaces belonging to this group
+  class EFPGroup {
+  public:
+    EFPBondingGroupID mGroupID = 0;
+    std::vector<std::shared_ptr<EFPInterface>> mGroupInterfaces;
+  };
+
+  ///EFPInterfaceCommit
+  ///@mCommit commit value %
+  ///@mInterfaceID The interface ID
+  ///@mGroupID The group ID
   class EFPInterfaceCommit {
   public:
     double mCommit = 0;
@@ -88,7 +107,6 @@ public:
 
   ///Return the version of the current implementation
   uint16_t getVersion() { return (EFP_BONDING_MAJOR_VERSION << 8) | EFP_BONDING_MINOR_VERSION; }
-
 
   ///Returns the statistics fo a interface
   ///@interfaceID the ID of the interface to get statistics for
@@ -125,17 +143,16 @@ public:
   ///@groupID the ID of the group to remove
   EFPBondingMessages removeGroup(EFPBondingGroupID groupID);
 
-  ///Current payload coverage
-  double mCurrentCoverage = 0;
-
 private:
-
-  //FIXME add information
+  
   uint64_t mGlobalPacketCounter = 0;
+  //FIXME mMonotonicPacketCounter is not monotonic since we have to reset when adding new groups..
+  //FIXME fix how to deal with adding and deleting groups.
   uint64_t mMonotonicPacketCounter = 0;
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
-  std::vector<std::vector<std::shared_ptr<EFPInterface>>> mGroupList;
+  std::vector<EFPGroup> mGroupList;
+
 };
 
 #endif //EFPBOND__EFPBONDING_H
