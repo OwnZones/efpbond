@@ -30,7 +30,7 @@ struct PrivateData {
   size_t sizeOfData = 0;
 };
 
-//This is the same thread as EFP packAndSend we can only call EFPBond methods from this thread since EFPBond is not threadsafe!!
+//This is the same thread as EFP packAndSend we can only call EFPBond methods from this thread since EFPBond is not thread safe!!
 void sendData(const std::vector<uint8_t> &rSubPacket) {
   myEFPBonding.distributeDataGroup(rSubPacket);
   if ((rSubPacket[0] & 0x0f) == 2) {
@@ -196,16 +196,12 @@ int main() {
   lInterface.mMasterInterface = EFP_NORMAL_INTERFACE;
   lInterfaces.push_back(lInterface);
 
-
   //When done push the interfaces to EFPBonding creating a EFPBonding-group
-  EFPBonding::EFPBondingGroupID bondingGroupID = myEFPBonding.addInterfaceGroup(lInterfaces);
-  if (!bondingGroupID) {
+  groupID[0] = myEFPBonding.addInterfaceGroup(lInterfaces);
+  if (!groupID[0]) {
     std::cout << "Test1 failed" << std::endl;
     return EXIT_FAILURE;
   }
-
-  //Store the group ID for controlling the group later.
-  groupID[0] = bondingGroupID;
 
   //Send data
   std::vector<uint8_t> mydata;
@@ -233,7 +229,6 @@ int main() {
     std::cout << "Failed removing group" << std::endl;
     return EXIT_FAILURE;
   }
-
 
   //When here we have
   //1. created a group of 3 interfaces sending 100 superframes load balance 33.3% for each interface
@@ -267,12 +262,11 @@ int main() {
   lInterface.mMasterInterface = EFP_NORMAL_INTERFACE;
   lInterfaces.push_back(lInterface);
   //When done push the interfaces to EFPBonding creating a EFPBonding-group (2 interfaces 50% payload each.)
-  EFPBonding::EFPBondingGroupID bondingGroupID1 = myEFPBonding.addInterfaceGroup(lInterfaces);
-  if (!bondingGroupID1) {
+  groupID[0] = myEFPBonding.addInterfaceGroup(lInterfaces);
+  if (!groupID[0]) {
     std::cout << "Test2 failed" << std::endl;
     return EXIT_FAILURE;
   }
-  groupID[0] = bondingGroupID1;
 
   //Remove all interfaces
   lInterfaces.clear();
@@ -284,12 +278,11 @@ int main() {
   lInterface.mInterfaceLocation = std::bind(&networkInterface3, std::placeholders::_1); //This interface looses 50% payload
   lInterface.mMasterInterface = EFP_MASTER_INTERFACE;
   lInterfaces.push_back(lInterface);
-  EFPBonding::EFPBondingGroupID bondingGroupID2 = myEFPBonding.addInterfaceGroup(lInterfaces);
-  if (!bondingGroupID2) {
+  groupID[1] = myEFPBonding.addInterfaceGroup(lInterfaces);
+  if (!groupID[1]) {
     std::cout << "Test2 failed" << std::endl;
     return EXIT_FAILURE;
   }
-  groupID[1] = bondingGroupID2;
 
   //Ok we created our bonding now let's send some data
 
@@ -312,12 +305,12 @@ int main() {
     }
   }
 
-  efpBondResult = myEFPBonding.removeGroup(bondingGroupID1);
+  efpBondResult = myEFPBonding.removeGroup(groupID[0]);
   if (efpBondResult != EFPBondingMessages::noError) {
     std::cout << "Failed removing group" << std::endl;
     return EXIT_FAILURE;
   }
-  efpBondResult = myEFPBonding.removeGroup(bondingGroupID2);
+  efpBondResult = myEFPBonding.removeGroup(groupID[1]);
   if (efpBondResult != EFPBondingMessages::noError) {
     std::cout << "Failed removing group" << std::endl;
     return EXIT_FAILURE;
