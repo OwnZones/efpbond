@@ -24,7 +24,6 @@
 #define EFP_MASTER_INTERFACE true
 #define EFP_NORMAL_INTERFACE false
 
-
 enum class EFPBondingMessages : int16_t {
   interfaceIDNotFound = -10000, // Interface ID not found
   removeGroupNotFound,          // Group ID not found
@@ -51,7 +50,7 @@ public:
   public:
     uint64_t mNoGapsCoveredFor = 0;
     uint64_t mNoFragmentsSent = 0;
-    double mPercentOfTotalTraffic = 0;
+    double mPercentOfTotalTraffic = 0.0;
   };
 
   ///EFPInterface
@@ -64,13 +63,18 @@ public:
   ///@mCommit % of total traffic this interface committed to.
   class EFPInterface {
   public:
+    explicit EFPInterface(EFPBonding::EFPBondingInterfaceID interfaceID = 0, std::function<void(const std::vector<uint8_t> &)> interfaceLocation = nullptr, bool masterInterface = EFP_NORMAL_INTERFACE) {
+      mInterfaceID = interfaceID;
+      mInterfaceLocation = interfaceLocation;
+      mMasterInterface = masterInterface;
+    }
     EFPBondingInterfaceID mInterfaceID = 0;
-    double mFireCounter = 0;
-    uint64_t mFragmentCounter;
-    uint64_t mForwardMissingFragment; //For debug purpose
+    double mFireCounter = 0.0;
+    uint64_t mFragmentCounter = 0;
+    uint64_t mForwardMissingFragment = 0;
     std::function<void(const std::vector<uint8_t> &)> mInterfaceLocation = nullptr;
-    bool mMasterInterface = EFP_NORMAL_INTERFACE;  //For debug purpose
-    double mCommit = 0;
+    bool mMasterInterface = EFP_NORMAL_INTERFACE;
+    double mCommit = 0.0;
   };
 
   ///EFPGroup
@@ -88,7 +92,12 @@ public:
   ///@mGroupID The group ID
   class EFPInterfaceCommit {
   public:
-    double mCommit = 0;
+    explicit EFPInterfaceCommit(double commit, EFPBonding::EFPBondingGroupID groupID, EFPBonding::EFPBondingInterfaceID interfaceID) {
+      mCommit = commit;
+      mInterfaceID = interfaceID;
+      mGroupID = groupID;
+    }
+    double mCommit = 0.0;
     EFPBonding::EFPBondingInterfaceID mInterfaceID = 0;
     EFPBonding::EFPBondingGroupID mGroupID = 0;
   };
@@ -144,13 +153,11 @@ public:
   EFPBondingMessages removeGroup(EFPBondingGroupID groupID);
 
 private:
-
   uint64_t mGlobalPacketCounter = 0;
   uint64_t mMonotonicPacketCounter = 0;
   EFPBondingInterfaceID mUniqueInterfaceID = 1;
   EFPBondingGroupID mUniqueGroupID = 1;
   std::vector<EFPGroup> mGroupList;
-
 };
 
 #endif //EFPBOND__EFPBONDING_H

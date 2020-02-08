@@ -128,7 +128,6 @@ EFPBonding::EFPStatistics EFPBonding::getStatistics(EFPBonding::EFPBondingInterf
                                                     EFPBonding::EFPBondingGroupID groupID,
                                                     bool reset) {
   EFPBonding::EFPStatistics lMyStatistics;
-
   if (!interfaceID || !groupID || !mGroupList.size()) {
     return lMyStatistics;
   }
@@ -183,10 +182,14 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     if (rInterface.mMasterInterface) {
       didProvideMasterInterface = true;
     }
+    if (rInterface.mInterfaceLocation == nullptr) {
+      LOGGER(true, LOGG_ERROR, "Did not provide interface location")
+      return 0;
+    }
     std::shared_ptr<EFPInterface> lThisInterface = std::make_shared<EFPInterface>();
     lThisInterface->mInterfaceLocation = rInterface.mInterfaceLocation;
     lThisInterface->mCommit = lCommit;
-    lThisInterface->mFireCounter = rInterface.mCommit;
+    lThisInterface->mFireCounter = 0.0;
     lThisInterface->mInterfaceID = rInterface.mInterfaceID;
     lThisInterface->mMasterInterface = rInterface.mMasterInterface;
     lThisInterface->mFragmentCounter = 0;
@@ -195,12 +198,10 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     lGroup.mGroupInterfaces.push_back(std::move(lThisInterface));
     lOffset += lCommit;
   }
-
   if (!didProvideMasterInterface) {
     LOGGER(true, LOGG_ERROR, "Did not provide master interface")
     return 0;
   }
-
   mGroupList.push_back(std::move(lGroup));
   return mUniqueGroupID++;
 }
@@ -231,7 +232,6 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
     }
   }
 
-
   for (auto const &rGroup: mGroupList) {
     std::vector<std::shared_ptr<EFPInterface>> lRoundRobinInterfaces;
     for (auto const &rInterface: rGroup.mGroupInterfaces) {
@@ -257,10 +257,8 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
       lRoundRobinInterfaces[targetInterface]->mFragmentCounter++;
     }
   }
-
   mGlobalPacketCounter++;
   mMonotonicPacketCounter++;
-
   return EFPBondingMessages::noError;
 }
 

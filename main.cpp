@@ -56,32 +56,17 @@ void efpBondTestsHandler1() {
     myEFPBonding.clearGlobalPacketCounter();
 
     if (groupOfPackets == 0) {
-      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
-      myInterfaceCommit.mCommit = 20;
-      myInterfaceCommit.mGroupID = groupID[0];
-      myInterfaceCommit.mInterfaceID = groupInterfacesID[1];
+      EFPBonding::EFPInterfaceCommit myInterfaceCommit(20, groupID[0], groupInterfacesID[1] );
       myEFPBonding.modifyInterfaceCommit(myInterfaceCommit);
 
     } else if (groupOfPackets == 1) {
       std::vector<EFPBonding::EFPInterfaceCommit> myInterfaceCommits;
-      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
-      myInterfaceCommit.mCommit = 25;
-      myInterfaceCommit.mGroupID = groupID[0];
-      myInterfaceCommit.mInterfaceID = groupInterfacesID[0];
-      myInterfaceCommits.push_back(myInterfaceCommit);
-      myInterfaceCommit.mCommit = 25;
-      myInterfaceCommit.mGroupID = groupID[0];
-      myInterfaceCommit.mInterfaceID = groupInterfacesID[1];
-      myInterfaceCommits.push_back(myInterfaceCommit);
-      myInterfaceCommit.mCommit = 50;
-      myInterfaceCommit.mGroupID = groupID[0];
-      myInterfaceCommit.mInterfaceID = groupInterfacesID[2];
-      myInterfaceCommits.push_back(myInterfaceCommit);
+      myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(25, groupID[0], groupInterfacesID[0]));
+      myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(25, groupID[0], groupInterfacesID[1]));
+      myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(50, groupID[0], groupInterfacesID[2]));
       myEFPBonding.modifyTotalGroupCommit(myInterfaceCommits);
     }
-
     groupOfPackets++;
-
   }
 }
 
@@ -162,42 +147,19 @@ int main() {
   myEFPReceiver.receiveCallback = std::bind(&gotData, std::placeholders::_1);
   myEFPReceiver.startReceiver(5, 2);
 
-  //Interface
-  EFPBonding::EFPInterface lInterface;
   //Group interface
   std::vector<EFPBonding::EFPInterface> lInterfaces;
-
   //Get a ID from EFPBonding
-  EFPBonding::EFPBondingInterfaceID ifID = myEFPBonding.generateInterfaceID();
-  //I assign that but also store it so that I can target this interface later
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[0] = ifID;
-  //I provide the callback where the 'sendto' is located
-  lInterface.mInterfaceLocation = std::bind(&networkInterface1, std::placeholders::_1);
-
-  //At least one interface has to be a master interface in the group
-  lInterface.mMasterInterface = EFP_MASTER_INTERFACE;
-
-  //Put the interface into a vector of interfaces
-  lInterfaces.push_back(lInterface);
-
-  //Do the same for the other interfaces
-  ifID = myEFPBonding.generateInterfaceID();
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[1] = ifID;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface2, std::placeholders::_1);
-  lInterface.mMasterInterface = EFP_NORMAL_INTERFACE;
-  lInterfaces.push_back(lInterface);
-
-  ifID = myEFPBonding.generateInterfaceID();
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[2] = ifID;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface4, std::placeholders::_1);
-  lInterface.mMasterInterface = EFP_NORMAL_INTERFACE;
-  lInterfaces.push_back(lInterface);
+  groupInterfacesID[0] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[0],std::bind(&networkInterface1, std::placeholders::_1), EFP_MASTER_INTERFACE));
+  groupInterfacesID[1] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[1],std::bind(&networkInterface2, std::placeholders::_1), EFP_NORMAL_INTERFACE));
+  groupInterfacesID[2] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[2],std::bind(&networkInterface4, std::placeholders::_1), EFP_NORMAL_INTERFACE));
 
   //When done push the interfaces to EFPBonding creating a EFPBonding-group
   groupID[0] = myEFPBonding.addInterfaceGroup(lInterfaces);
+
   if (!groupID[0]) {
     std::cout << "Test1 failed" << std::endl;
     return EXIT_FAILURE;
@@ -249,18 +211,10 @@ int main() {
   lInterfaces.clear();
 
   //Build new interfaces
-  ifID = myEFPBonding.generateInterfaceID();
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[0] = ifID;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface1, std::placeholders::_1);
-  lInterface.mMasterInterface = EFP_MASTER_INTERFACE;
-  lInterfaces.push_back(lInterface);
-  ifID = myEFPBonding.generateInterfaceID();
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[1] = ifID;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface2, std::placeholders::_1);
-  lInterface.mMasterInterface = EFP_NORMAL_INTERFACE;
-  lInterfaces.push_back(lInterface);
+  groupInterfacesID[0] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[0],std::bind(&networkInterface1, std::placeholders::_1), EFP_MASTER_INTERFACE));
+  groupInterfacesID[1] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[1],std::bind(&networkInterface2, std::placeholders::_1), EFP_NORMAL_INTERFACE));
   //When done push the interfaces to EFPBonding creating a EFPBonding-group (2 interfaces 50% payload each.)
   groupID[0] = myEFPBonding.addInterfaceGroup(lInterfaces);
   if (!groupID[0]) {
@@ -272,12 +226,9 @@ int main() {
   lInterfaces.clear();
 
   //Build new interface
-  ifID = myEFPBonding.generateInterfaceID();
-  lInterface.mInterfaceID = ifID;
-  groupInterfacesID[2] = ifID;
-  lInterface.mInterfaceLocation = std::bind(&networkInterface3, std::placeholders::_1); //This interface looses 50% payload
-  lInterface.mMasterInterface = EFP_MASTER_INTERFACE;
-  lInterfaces.push_back(lInterface);
+  groupInterfacesID[2] = myEFPBonding.generateInterfaceID();
+  lInterfaces.push_back(EFPBonding::EFPInterface(groupInterfacesID[2],std::bind(&networkInterface1, std::placeholders::_1), EFP_MASTER_INTERFACE));
+
   groupID[1] = myEFPBonding.addInterfaceGroup(lInterfaces);
   if (!groupID[1]) {
     std::cout << "Test2 failed" << std::endl;
@@ -315,6 +266,5 @@ int main() {
     std::cout << "Failed removing group" << std::endl;
     return EXIT_FAILURE;
   }
-
   return EXIT_SUCCESS;
 }
