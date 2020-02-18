@@ -82,6 +82,4 @@ fabric.properties
 /cmake-build-release/
 
 # ignore all efp files
-efp/*
-# don't ignore .gitkeep files
-!.gitkeep
+efp/
