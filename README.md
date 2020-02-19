@@ -74,10 +74,10 @@ EFPBonding myEFPBonding;
 Configure your interfaces
 
 ```
-EFPBonding::EFPInterface lInterface;
-lInterface.mInterfaceID = myEFPBonding.generateInterfaceID();
-lInterface.mInterfaceLocation = std::bind(&networkInterface1, std::placeholders::_1);
-lInterface.mMasterInterface = NORMAL_INTERFACE;
+  EFPBonding::EFPInterface if1 = EFPBonding::EFPInterface(
+      std::bind(&networkInterface1, std::placeholders::_1),
+      interfacesID,
+      EFP_MASTER_INTERFACE);
 ```
 
 **Step 3**
@@ -99,48 +99,38 @@ EFPBonding::EFPBondingGroupID bondingGroupID = myEFPBonding.addInterfaceGroup(lI
 Pass fragment to all groups and all interfaces by sending the EFP fragments troug the bonding plug-in.
 
 ```
-
-void sendData(const std::vector<uint8_t> &rSubPacket) {
+void sendData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID) {
   myEFPBonding.distributeDataGroup(rSubPacket);
 }
 
 ```
+If split-mode is used 
+
+```
+EFPBondingMessages result = myEFPBonding.splitData(rSubPacket, fragmentID);
+ if (result == EFPBondingMessages::fragmentNotSent) {
+  std::cout << "Fragment not sent.. Do what?" << std::endl;
+ }
+```
 
 **Step 5**
 
-Changing the commit % can be done in operation either by setting a specific interface to a certan commit level (The code blow sets the interface to 20% commit)
+Changing the commit % can be done in operation. Just hand over the interfaces ID and the new commit level.
+Total commit may not be higher than 100%
 
 ```
-      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
-      myInterfaceCommit.mCommit = 20;
-      myInterfaceCommit.mGroupID = (The group ID of the interface);
-      myInterfaceCommit.mInterfaceID = (The ID of the interface that you want to change);
-      myEFPBonding.modifyInterfaceCommit(myInterfaceCommit);
+//Create a empty list of commits
+std::vector<EFPBonding::EFPInterfaceCommit> myInterfaceCommits;
+
+//Then populate the list with interface ID's and commits
+myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(25, groupInterfacesID[0]));
+myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(25, groupInterfacesID[1]));
+myInterfaceCommits.push_back(EFPBonding::EFPInterfaceCommit(50, groupInterfacesID[2]));
+
+//Then let EFPBond know what you want. Specify the target group
+myEFPBonding.modifyInterfaceCommits(myInterfaceCommits, groupID);
 
 ```
-
-Or by setting the commit levels for all interfaces in the group (the code below sets the three interfaces in the group to 25% 25% 50% (total 100%) commit).
-
-```
-      std::vector<EFPBonding::EFPInterfaceCommit> myInterfaceCommits;
-      EFPBonding::EFPInterfaceCommit myInterfaceCommit;
-      myInterfaceCommit.mCommit = 25;
-      myInterfaceCommit.mGroupID = (The group ID of the interface);
-      myInterfaceCommit.mInterfaceID = (The ID of the interface that you want to change);
-      myInterfaceCommits.push_back(myInterfaceCommit);
-      myInterfaceCommit.mCommit = 25;
-      myInterfaceCommit.mGroupID = (The group ID of the interface);
-      myInterfaceCommit.mInterfaceID = (The ID of the interface that you want to change);
-      myInterfaceCommits.push_back(myInterfaceCommit);
-      myInterfaceCommit.mCommit = 50;
-      myInterfaceCommit.mGroupID = (The group ID of the interface);
-      myInterfaceCommit.mInterfaceID = (The ID of the interface that you want to change);
-      myInterfaceCommits.push_back(myInterfaceCommit);
-      myEFPBonding.modifyTotalGroupCommit(myInterfaceCommits);
-
-```
-
-
 
 
 ## Using EFPBonding in your CMake project
