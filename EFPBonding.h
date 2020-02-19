@@ -130,7 +130,10 @@ public:
   ///Returns the total number of fragments handled with by EFPBonding
   uint64_t getGlobalPacketCounter();
 
-  ///re-sets the globsal packet counter
+  ///adds 1 to the global packet counter
+  void increaseGlobalPacketCounter();
+
+  ///re-sets the global packet counter
   void clearGlobalPacketCounter();
 
   ///Returns a unique interfaceID
@@ -143,8 +146,13 @@ public:
 
   ///Distributes the data to all groups registerd
   ///@rSubPacket the data to be distributed
-  ///@fragmentID the EFP stream ID this fragment belongs to. If == 0 then split mode is turned off
-  EFPBondingMessages distributeDataGroup(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID);
+  ///@fragmentID the EFP stream ID this fragment belongs to.
+  EFPBondingMessages distributeData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID);
+
+  ///Split fragments based on fragmentID to registerd interfaces
+  ///@rSubPacket the data to be distributed
+  ///@fragmentID the EFP stream ID this fragment belongs to.
+  EFPBondingMessages splitData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID);
 
   ///Removes a interface group from EFPBonding
   ///@groupID the ID of the group to remove

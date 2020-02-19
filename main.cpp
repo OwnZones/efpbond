@@ -8,8 +8,8 @@
 #define NO_GROUPS 2
 
 //EFP
-ElasticFrameProtocol myEFPSender(MTU,ElasticFrameMode::sender);
-ElasticFrameProtocol myEFPReceiver;
+ElasticFrameProtocolSender myEFPSender(MTU);
+ElasticFrameProtocolReceiver myEFPReceiver(5, 2);
 
 //EFP Bonding plug-in
 EFPBonding myEFPBonding;
@@ -33,9 +33,18 @@ struct PrivateData {
 
 //This is the same thread as EFP packAndSend we can only call EFPBond methods from this thread since EFPBond is not thread safe!!
 void sendData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID) {
-
-  //If distributeDataGroup recieves 0 as fragmentID then split mode will not be active
-  myEFPBonding.distributeDataGroup(rSubPacket, testNumber == 3?fragmentID:0);
+  //If you want to keep track of the statistics. Then call this every time a fragment is sent
+  myEFPBonding.increaseGlobalPacketCounter();
+  //If splitData recieves 0 as fragmentID then split mode will not be active
+  //We only want to split data in test 3
+  if (testNumber == 3) {
+    EFPBondingMessages result = myEFPBonding.splitData(rSubPacket, fragmentID);
+    if (result == EFPBondingMessages::fragmentNotSent) {
+      std::cout << "This fragment was not sent on any interface. Discard or hand to a interface?" << std::endl;
+    }
+  }
+  //distributeData does not use fragment id
+  myEFPBonding.distributeData(rSubPacket, 0);
   if ((rSubPacket[0] & 0x0f) == 2) {
     superframeCounter++;
     if (testNumber == 1) efpBondTestsHandler1();
@@ -124,7 +133,7 @@ void efpBondTestsHandler3() {
   }
 }
 
-void gotData(ElasticFrameProtocol::pFramePtr &rPacket) {
+void gotData(ElasticFrameProtocolReceiver::pFramePtr &rPacket) {
   if (rPacket->mBroken) {
     std::cout << "Frame is broken" << std::endl;
     return;
@@ -179,7 +188,6 @@ int main() {
   //Set-up ElasticFrameProtocol
   myEFPSender.sendCallback = std::bind(&sendData, std::placeholders::_1, std::placeholders::_2);
   myEFPReceiver.receiveCallback = std::bind(&gotData, std::placeholders::_1);
-  myEFPReceiver.startReceiver(5, 2);
 
     //Group interface
     std::vector<EFPBonding::EFPInterface> lInterfaces;

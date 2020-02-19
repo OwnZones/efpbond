@@ -157,6 +157,10 @@ uint64_t EFPBonding::getGlobalPacketCounter() {
   return mGlobalPacketCounter;
 }
 
+void EFPBonding::increaseGlobalPacketCounter() {
+  mGlobalPacketCounter += 1;
+}
+
 //Re-set the global packet counter
 void EFPBonding::clearGlobalPacketCounter() {
   mGlobalPacketCounter = 0;
@@ -249,12 +253,8 @@ EFPBondingMessages EFPBonding::removeGroup(EFPBondingGroupID groupID) {
   return EFPBondingMessages::groupNotFound;
 }
 
-EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID) {
-  mGlobalPacketCounter++;
-  mMonotonicPacketCounter++;
-
+EFPBondingMessages EFPBonding::splitData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID) {
   bool noFragmentReciever = true;
-  //Split mode part
   if (fragmentID) {
     if (mStreamInterfaces[fragmentID].size()) {
       for (auto &rInterface: mStreamInterfaces[fragmentID]) {
@@ -265,10 +265,14 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
     }
   }
 
+  if (noFragmentReciever) {
+    return EFPBondingMessages::fragmentNotSent;
+  }
+  return EFPBondingMessages::noError;
+}
+
+EFPBondingMessages EFPBonding::distributeData(const std::vector<uint8_t> &rSubPacket, uint8_t fragmentID) {
   if (!mGroupList.size()) {
-    if (noFragmentReciever) {
-      return EFPBondingMessages::fragmentNotSent;
-    }
     return EFPBondingMessages::noGroupsFound;
   }
 
@@ -306,6 +310,7 @@ EFPBondingMessages EFPBonding::distributeDataGroup(const std::vector<uint8_t> &r
       lRoundRobinInterfaces[targetInterface]->mFragmentCounter++;
     }
   }
+  mMonotonicPacketCounter++;
   return EFPBondingMessages::noError;
 }
 
