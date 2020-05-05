@@ -3,18 +3,18 @@
 //
 
 #include "EFPBonding.h"
-#include "Bonding.h"
+#include "logger.h"
 
 //Constructor
 EFPBonding::EFPBonding() {
-  LOGGER(true, LOGG_NOTIFY, "EFPBonding constructed")
+  EFP_LOGGER(true, LOGG_NOTIFY, "EFPBonding constructed")
   mStreamInterfaces = std::vector<std::vector<EFPInterface>>(256);
   mGlobalPacketCounter = 0;
 }
 
 //Destructor
 EFPBonding::~EFPBonding() {
-  LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
+  EFP_LOGGER(true, LOGG_NOTIFY, "EFPBonding destruct")
 }
 
 //Change interface commits in a group
@@ -218,7 +218,7 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
       didProvideMasterInterface = true;
     }
     if (rInterface.mInterfaceLocation == nullptr) {
-      LOGGER(true, LOGG_ERROR, "Did not provide interface location")
+      EFP_LOGGER(true, LOGG_ERROR, "Did not provide interface location")
       return 0;
     }
     std::shared_ptr<EFPInterface> lThisInterface = std::make_shared<EFPInterface>();
@@ -234,7 +234,7 @@ EFPBonding::EFPBondingGroupID EFPBonding::addInterfaceGroup(std::vector<EFPInter
     lOffset += lCommit;
   }
   if (!didProvideMasterInterface) {
-    LOGGER(true, LOGG_ERROR, "Did not provide master interface")
+    EFP_LOGGER(true, LOGG_ERROR, "Did not provide master interface")
     return 0;
   }
   mGroupList.push_back(std::move(lGroup));
