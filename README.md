@@ -1,8 +1,8 @@
-![alt text](https://bitbucket.org/unitxtra/efpbond/raw/9e7b4f0d8a79343bcabf6781eb1af001e83ce786/efpbondingblack.png)
+![alt text](efpbondingblack.png)
 
 # EFPBond
 
-The EFPBond is acting as a data distributor from [ElasticFrameProtocol](https://bitbucket.org/unitxtra/efp/src/master/) and the underlying protocols.
+The EFPBond is acting as a data distributor from [ElasticFrameProtocol](https://github.com/Unit-X/efp) and the underlying protocols.
 
 ```
 ---------------------------------------------------------   /\
@@ -33,15 +33,19 @@ Requires cmake version >= **3.10** and **C++14**
 **Release:**
 
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Release .
-make
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . --config Release
 ```
 
 ***Debug:***
 
 ```sh
+mkdir build
+cd build
 cmake -DCMAKE_BUILD_TYPE=Debug .
-make
+cmake --build . --config Debug
 ```
 
 Output: 
@@ -135,7 +139,7 @@ myEFPBonding.modifyInterfaceCommits(myInterfaceCommits, groupID);
 
 ## Using EFPBonding in your CMake project
 
-Please see directions in ElasticFrameProrocol repository and the CMakeLists.txt in this project
+Please see examples in ElasticFrameProrocol repository and the CMakeLists.txt in this project
 
 
 ## Contributing
