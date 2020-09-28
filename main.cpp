@@ -9,7 +9,7 @@
 
 //EFP
 ElasticFrameProtocolSender myEFPSender(MTU);
-ElasticFrameProtocolReceiver myEFPReceiver(5, 2);
+ElasticFrameProtocolReceiver myEFPReceiver(50, 20);
 
 //EFP Bonding plug-in
 EFPBonding myEFPBonding;
