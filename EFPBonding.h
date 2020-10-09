@@ -17,6 +17,8 @@
 #include <vector>
 #include <iostream>
 #include <tuple>
+#include <memory>
+#include <functional>
 
 #define EFP_BONDING_MAJOR_VERSION 1
 #define EFP_BONDING_MINOR_VERSION 0
