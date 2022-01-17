@@ -1,6 +1,4 @@
-//
-// UnitX Edgeware AB 2020
-//
+// Copyright Edgeware AB 2020, Agile Content 2021-2022
 
 //Methods are NOT thread safe meaning you may only call all methods from the same thread as calling distributeDataGroup
 
