@@ -23,7 +23,7 @@ You can for example send data over a mix of any UDP/SRT/TCP as illustrated above
 
 Example 100% over a WiFi connection, then as backup 50% each over two 4G connections as backup. That would create a 1+1 protected signal bonding two 4G connections as backup to the primary WIFI connection.
 
-Please read -> [**EFPBond**](https://edgeware-my.sharepoint.com/:p:/g/personal/anders_cedronius_edgeware_tv/Efpyixw-TG5KuUupbCKUgfgBM3zNs-_dhM5RbUBjgdrKpw?e=NcBUBW) for more information.
+Please read -> [**EFPBond**](https://github.com/agilecontent/efpbond/blob/master/docs/EFPBondingPlugIn.pdf)) for more information.
 
 
 ## Installation
