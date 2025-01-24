@@ -160,7 +160,7 @@ If you for example use WiFi to transport your media from a location but need 4G 
 
 ## Credits
 
-The UnitX team at Edgeware AB. Edgeware is part of Agile Content from 2021.
+The Ateliere Live development team.
 
 
 ## License
